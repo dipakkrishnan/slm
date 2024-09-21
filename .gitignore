@@ -1,2 +1,8 @@
+# Rust builds
 /target
+
+# Data splits
 /data
+
+# Python loading stuff
+__pycache__
