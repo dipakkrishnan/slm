@@ -15,7 +15,7 @@ struct Args {
     tokenizer_path: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse args
     let args = Args::parse();
 
@@ -26,4 +26,6 @@ fn main() {
     let batch_size = 32;
     let max_seq_len = 128;
 
+    
+    Ok(())
 }

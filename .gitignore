@@ -4,6 +4,9 @@
 # Data splits
 /dataset_splits
 
+# Tensor storage
+/tensors
+
 
 # Python loading stuff
 __pycache__

@@ -1,40 +1,48 @@
 import os
+import torch
 from datasets import load_dataset, Dataset
 from tokenizers import Tokenizer
-from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
-from tokenizers.pre_tokenizers import Whitespace
-
-
-def train_tokenizer(
-    train_split_file: str = "dataset_splits/train.txt",
-    tokenizer_config_file: str = "tokenizer/tokenizer.json",
-):
-    """Trains tokenizer using byte-pair encoding algorithm."""
-    tokenizer = Tokenizer(BPE())
-    tokenizer.pre_tokenizer = Whitespace()  # split into words on whitespace
-    trainer = BpeTrainer(special_tokens=["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"])
-    tokenizer.train(files=[train_split_file], trainer=trainer)
-    tokenizer.save(tokenizer_config_file)  # persist to disk
-
-
-def save_to_disk(dataset: Dataset, output_dir: str = "dataset_splits"):
-    """Saves dataset splits to disk."""
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    for split in dataset:
-        file_path = os.path.join(output_dir, f"{split}.txt")
-        with open(file_path, "w", encoding="utf-8") as f:
-            for item in dataset[split]["text"]:  # save each split to disk
-                f.write(item + "\n")
+from transformers import PreTrainedTokenizerFast
 
 
 def main():
-    """Main handler to load dataset, save it to disk and train tokenizer."""
+    # Load dataset
     dataset = load_dataset("wikitext", "wikitext-2-raw-v1")
-    save_to_disk(dataset)
-    train_tokenizer()
+    train_dataset = dataset["train"]
+    valid_dataset = dataset["validation"]
+    test_dataset = dataset["test"]
+
+    # Load tokenizer and cast to transformers type
+    tokenizer = Tokenizer.from_file("tokenizer/tokenizer.json")
+    fast_tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer)
+    fast_tokenizer.pad_token = "[PAD]"
+
+    def tokenize_function(examples: dict):
+        return fast_tokenizer(
+            examples["text"], padding="max_length", truncation=True, max_length=128
+        )
+
+    tokenized_train = train_dataset.map(tokenize_function, batched=True)
+    tokenized_valid = valid_dataset.map(tokenize_function, batched=True)
+    tokenized_test = test_dataset.map(tokenize_function, batched=True)
+
+    tokenized_train.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    tokenized_valid.set_format(type="torch", columns=["input_ids", "attention_mask"])
+    tokenized_test.set_format(type="torch", columns=["input_ids", "attention_mask"])
+
+    os.makedirs("tensors", exist_ok=True)
+    torch.save(
+        (tokenized_train["input_ids"], tokenized_train["attention_mask"]),
+        "tensors/train_data.pt",
+    )
+    torch.save(
+        (tokenized_valid["input_ids"], tokenized_valid["attention_mask"]),
+        "tensors/valid_data.pt",
+    )
+    torch.save(
+        (tokenized_test["input_ids"], tokenized_test["attention_mask"]),
+        "tensors/test_data.pt",
+    )
 
 
 if __name__ == "__main__":
