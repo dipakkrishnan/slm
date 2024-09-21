@@ -2,7 +2,8 @@
 /target
 
 # Data splits
-/data
+/dataset_splits
+
 
 # Python loading stuff
 __pycache__
