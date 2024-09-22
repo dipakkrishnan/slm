@@ -1,12 +1,6 @@
 # Rust builds
 /target
-
 # Data splits
-/dataset_splits
-
-# Tensor storage
-/tensors
-
-
+/datasets
 # Python loading stuff
 __pycache__
