@@ -3,13 +3,9 @@ from typing import List, Tuple
 import torch
 from torch.utils.data import Dataset, DataLoader
 from tokenizers import Tokenizer
-from tokenizers.processors import TemplateProcessing
 
 
 class WikiText2Dataset(Dataset):
-    """
-    Custom Dataset for the WikiText-2 dataset using a trained BPE tokenizer.
-    """
 
     def __init__(
         self,
@@ -97,11 +93,37 @@ class WikiText2Dataset(Dataset):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Input and target tensors.
         """
-        start_idx = idx * self.seq_length
+        start_idx = idx * self.seq_length  # start at some multiple of seq length
         end_idx = start_idx + self.seq_length + 1
         input_seq = self.encoded_text[start_idx : end_idx - 1]
-        target_seq = self.encoded_text[start_idx + 1 : end_idx]
+        target_seq = self.encoded_text[
+            start_idx + 1 : end_idx
+        ]  # shift target by 1 for next token prediction
 
         input_tensor = torch.tensor(input_seq, dtype=torch.long)
         target_tensor = torch.tensor(target_seq, dtype=torch.long)
         return input_tensor, target_tensor
+
+
+class DataLoaderFactory:
+
+    @staticmethod
+    def get_data_loader(
+        split: str, batch_size: int = 32, num_workers: int = 2, shuffle: bool = True
+    ):
+        """
+        Factory method to build data loader based on split.
+
+        Args:
+            split (str): Dataset split to use ('train', 'valid', or 'test').
+            batch_size (int): Size of batch for the data loader.
+            num_workers (int): Number of workers for multiprocessing.
+            shuffle (bool): Randomly shuffle in batch creation.
+
+        Returns:
+            torch.utils.DataLoader: Iterable over dataset.
+        """
+        dataset = WikiText2Dataset(split=split)
+        return DataLoader(
+            dataset, batch_size=batch_size, num_workers=2, shuffle=shuffle
+        )
