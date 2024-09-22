@@ -18,8 +18,10 @@ fi
 staged_rs_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.rs$')
 if [ -n "$staged_rs_files" ]; then
     echo "Formatting Rust files..."
-    echo "$staged_rs_files" | xargs rustfmt --edition 2021
+    echo "$staged_rs_files" | xargs -I {} rustfmt --edition 2021 "{}"
     git add $staged_rs_files
+else
+    echo "No staged Rust files to format."
 fi
 
 # Run clippy
